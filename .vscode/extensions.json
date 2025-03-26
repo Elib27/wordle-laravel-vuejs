@@ -1,0 +1,17 @@
+{
+    "recommendations": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "streetsidesoftware.code-spell-checker",
+        "alexcvzz.vscode-sqlite",
+        "devsense.composer-php-vscode",
+        "eamodio.gitlens",
+        "editorconfig.editorconfig",
+        "laravel.vscode-laravel",
+        "ms-azuretools.vscode-docker",
+        "ms-vscode-remote.remote-wsl",
+        "qwtel.sqlite-viewer",
+        "vue.volar"
+    ]
+}
