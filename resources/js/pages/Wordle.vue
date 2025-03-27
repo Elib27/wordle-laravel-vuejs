@@ -1,20 +1,37 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
-const wantedWord = 'chest';
+const wantedWord = Array.from('chest');
 const actualAttempt = ref(0);
 const words = ref(new Array(5).fill('     '));
 const text = ref(' ');
 
-function inputLetter(word, letterIndex) {
-    word[letterIndex] = text.value;
+function inputLetter(word: string, letterIndex: number) {
+    const wordArray = [...word]
+    wordArray[letterIndex] = text.value;
 }
 
-function checkWord(letterIndex) {
-    if (words[actualAttempt.value][letterIndex] === wantedWord[letterIndex]) {
+function letterInWord(letter: string,  word: string, index: number){
+    if (word.includes(letter)){
+        const tempArrayWord = Array.from(word)
+        if(tempArrayWord[index] === letter){
+            return 1
+        }
+        else{
+            return 0
+        }
     }
+    else{
+        return -1
+    }
+}
+
+function checkWord(word: string) {
+    
+    const presence = letterInWord()
     actualAttempt.value += 1;
 }
+
 </script>
 
 <template>
@@ -27,7 +44,7 @@ function checkWord(letterIndex) {
             <input @input="inputLetter(word, letterIndex)" v-for="(letter, letterIndex) in word" :key="letterIndex" class="cell" maxlength="1" />
             <p>{{ text }}</p>
         </div>
-        <button @click="checkWord(letterIndex)" class="submitButton">Submit</button>
+        <button @click="checkWord(word)" class="submitButton">Submit</button>
     </body>
 </template>
 
@@ -53,6 +70,7 @@ function checkWord(letterIndex) {
     display: flex;
     flex-direction: column;
     align-items: center;
+    min-height: 100vh;
     background-color: black;
     padding: 20px;
     color: white;
