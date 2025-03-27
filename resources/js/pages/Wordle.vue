@@ -25,7 +25,7 @@ function letterInWord(letter: string, word: string, index: number) {
 }
 
 function checkWord(word: string) {
-    actualAttempt.value += 1;
+    actualAttempt.value = (actualAttempt.value < 4) ? actualAttempt.value+1: 0;
 }
 </script>
 
@@ -42,7 +42,9 @@ function checkWord(word: string) {
             </div>
             <button @click="checkWord(word)" class="submitButton">Submit</button>
         </main>
-        <aside class="aside"></aside>
+        <aside class="aside">
+            <h2 id="attemptDisplay">Attempt : {{ actualAttempt }}</h2>
+        </aside>
     </body>
 </template>
 
@@ -66,12 +68,25 @@ function checkWord(word: string) {
 
 .body {
     display: flex;
+    width: 100%;
+    justify-content: space-around ;
+    background-color: black;
+    padding: 50px;
+    color: white;
+    min-height: 100vh;
+}
+
+.main {
+    display: flex;
     flex-direction: column;
     align-items: center;
-    min-height: 100vh;
-    background-color: black;
-    padding: 20px;
-    color: white;
+    flex: 2;
+}
+
+.aside {
+    flex: 1;
+    align-content: center;
+
 }
 
 .wordLine {
