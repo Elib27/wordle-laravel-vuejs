@@ -11,7 +11,7 @@ Route::get('dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::post('/guessword/{id}', [WordleController::class, 'checkWord'])
+Route::post('/guessword/{id}', [WordleController::class, 'checkWord']);
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
