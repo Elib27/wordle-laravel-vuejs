@@ -14,25 +14,25 @@ class WordleController extends Controller
         $guess = $request->input('guess');
 
         $feedback = [];
-        $lettresRestantes = [];
+        $pendingLetters = [];
 
-        // Détection des lettres bien placées (correct)
+        // Detection of well placed letters (correct)
         for ($i = 0; $i < 5; $i++) {
             if ($guess[$i] === $mot[$i]) {
                 $feedback[$i] = ['correct'];
             } else {
-                $lettresRestantes[$mot[$i]] = ($lettresRestantes[$mot[$i]] ?? 0) + 1;
+                $pendingLetters[$mot[$i]] = ($pendingLetters[$mot[$i]] ?? 0) + 1;
             }
         }
 
-        // Détection des lettres mal placées (present) et absentes
+        // Dectection of wrong placed (present) and missing letters (missing)
         for ($i = 0; $i < 5; $i++) {
             if (!isset($feedback[$i])) {
-                if (!empty($lettresRestantes[$guess[$i]])) {
+                if (!empty($pendingLetters[$guess[$i]])) {
                     $feedback[$i] = ['present'];
-                    $lettresRestantes[$guess[$i]]--;
+                    $pendingLetters[$guess[$i]]--;
                 } else {
-                    $feedback[$i] = ['absent'];
+                    $feedback[$i] = ['missing'];
                 }
             }
         }
