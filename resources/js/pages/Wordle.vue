@@ -7,31 +7,26 @@ const words = ref(new Array(5).fill('     '));
 const text = ref(' ');
 
 function inputLetter(word: string, letterIndex: number) {
-    const wordArray = [...word]
+    const wordArray = [...word];
     wordArray[letterIndex] = text.value;
 }
 
-function letterInWord(letter: string,  word: string, index: number){
-    if (word.includes(letter)){
-        const tempArrayWord = Array.from(word)
-        if(tempArrayWord[index] === letter){
-            return 1
+function letterInWord(letter: string, word: string, index: number) {
+    if (word.includes(letter)) {
+        const tempArrayWord = Array.from(word);
+        if (tempArrayWord[index] === letter) {
+            return 1;
+        } else {
+            return 0;
         }
-        else{
-            return 0
-        }
-    }
-    else{
-        return -1
+    } else {
+        return -1;
     }
 }
 
 function checkWord(word: string) {
-    
-    const presence = letterInWord()
     actualAttempt.value += 1;
 }
-
 </script>
 
 <template>
@@ -40,11 +35,14 @@ function checkWord(word: string) {
         <h1 id="pageTitle">Wordle</h1>
     </header>
     <body class="body">
-        <div v-for="word in words" :key="word" class="wordLine">
-            <input @input="inputLetter(word, letterIndex)" v-for="(letter, letterIndex) in word" :key="letterIndex" class="cell" maxlength="1" />
-            <p>{{ text }}</p>
-        </div>
-        <button @click="checkWord(word)" class="submitButton">Submit</button>
+        <main class="main">
+            <div v-for="word in words" :key="word" class="wordLine">
+                <input @input="inputLetter(word, letterIndex)" v-for="(letter, letterIndex) in word" :key="letterIndex" class="cell" maxlength="1" />
+                <p>{{ text }}</p>
+            </div>
+            <button @click="checkWord(word)" class="submitButton">Submit</button>
+        </main>
+        <aside class="aside"></aside>
     </body>
 </template>
 
