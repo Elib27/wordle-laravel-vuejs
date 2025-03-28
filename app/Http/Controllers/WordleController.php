@@ -4,6 +4,13 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 
+enum LetterStatus: string
+{
+    case CORRECT_POSITION = 'CORRECT_POSITION';
+    case WRONG_POSITION = 'WRONG_POSITION';
+    case NOT_PRESENT = 'NOT_PRESENT';
+}
+
 class WordleController extends Controller
 {
 
@@ -13,21 +20,20 @@ class WordleController extends Controller
     public function checkWord(Request $request)
     {
 
-
         $id = intval($request->route('id'));
         $guess = $request->input('guess');
 
         if (strlen($guess) !== self::WORD_LENGTH) {
-            return response()->json(['error' => 'the length of the guessed word should be 5'], 400);
+            return response()->json(['message' => 'the length of the guessed word should be 5'], 400);
         }
 
-        $feedback = [];
+        $guessResult = [];
         $pendingLetters = [];
 
         // Detection of well placed letters (correct)
         for ($i = 0; $i < self::WORD_LENGTH; $i++) {
             if ($guess[$i] === self::WORD_TO_GUESS[$i]) {
-                $feedback[$i] = ['correct'];
+                $guessResult[$i] = LetterStatus::CORRECT_POSITION;
             } else {
                 $pendingLetters[self::WORD_TO_GUESS[$i]] = ($pendingLetters[self::WORD_TO_GUESS[$i]] ?? 0) + 1;
             }
@@ -35,16 +41,16 @@ class WordleController extends Controller
 
         // Detection of missplaced (but present) and missing letters
         for ($i = 0; $i < self::WORD_LENGTH; $i++) {
-            if (isset($feedback[$i])) continue;
+            if (isset($guessResult[$i])) continue;
 
             if (!empty($pendingLetters[$guess[$i]])) {
-                $feedback[$i] = ['present'];
+                $guessResult[$i] = LetterStatus::WRONG_POSITION;
                 $pendingLetters[$guess[$i]]--;
             } else {
-                $feedback[$i] = ['missing'];
+                $guessResult[$i] = LetterStatus::NOT_PRESENT;
             }
         }
 
-        return response()->json(['feedback' => $feedback, 'guess' => $guess], 200);
+        return response()->json(['guessResult' => $guessResult, 'guess' => $guess], 200);
     }
 }
