@@ -4,39 +4,53 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 
+enum LetterStatus: string
+{
+    case CORRECT_POSITION = 'CORRECT_POSITION';
+    case WRONG_POSITION = 'WRONG_POSITION';
+    case NOT_PRESENT = 'NOT_PRESENT';
+}
+
 class WordleController extends Controller
 {
 
-    private $mot = "CONTROLLER";
+    const WORD_TO_GUESS = 'apple';
+    const WORD_LENGTH = 5;
 
     public function checkWord(Request $request)
     {
+
+        $id = intval($request->route('id'));
         $guess = $request->input('guess');
 
-        $feedback = [];
+        if (strlen($guess) !== self::WORD_LENGTH) {
+            return response()->json(['message' => 'the length of the guessed word should be 5'], 400);
+        }
+
+        $guessResult = [];
         $pendingLetters = [];
 
         // Detection of well placed letters (correct)
-        for ($i = 0; $i < 5; $i++) {
-            if ($guess[$i] === $mot[$i]) {
-                $feedback[$i] = ['correct'];
+        for ($i = 0; $i < self::WORD_LENGTH; $i++) {
+            if ($guess[$i] === self::WORD_TO_GUESS[$i]) {
+                $guessResult[$i] = LetterStatus::CORRECT_POSITION;
             } else {
-                $pendingLetters[$mot[$i]] = ($pendingLetters[$mot[$i]] ?? 0) + 1;
+                $pendingLetters[self::WORD_TO_GUESS[$i]] = ($pendingLetters[self::WORD_TO_GUESS[$i]] ?? 0) + 1;
             }
         }
 
-        // Dectection of wrong placed (present) and missing letters (missing)
-        for ($i = 0; $i < 5; $i++) {
-            if (!isset($feedback[$i])) {
-                if (!empty($pendingLetters[$guess[$i]])) {
-                    $feedback[$i] = ['present'];
-                    $pendingLetters[$guess[$i]]--;
-                } else {
-                    $feedback[$i] = ['missing'];
-                }
+        // Detection of missplaced (but present) and missing letters
+        for ($i = 0; $i < self::WORD_LENGTH; $i++) {
+            if (isset($guessResult[$i])) continue;
+
+            if (!empty($pendingLetters[$guess[$i]])) {
+                $guessResult[$i] = LetterStatus::WRONG_POSITION;
+                $pendingLetters[$guess[$i]]--;
+            } else {
+                $guessResult[$i] = LetterStatus::NOT_PRESENT;
             }
         }
 
-        return response()->json(['feedback' => $feedback]);
+        return response()->json(['guessResult' => $guessResult, 'guess' => $guess], 200);
     }
 }
