@@ -3,7 +3,7 @@
 use App\Http\Controllers\WordleController;
 
 test('guess correct word returns correct positions', function () {
-    $response = $this->post('/api/guessword/1', ['guess' => 'apple']);
+    $response = $this->post('/api/guessword/1', ['guess' => 'arbre']);
     $response->assertStatus(200);
     $response->assertJson([
         'guessResult' => [
@@ -13,7 +13,7 @@ test('guess correct word returns correct positions', function () {
             'CORRECT_POSITION',
             'CORRECT_POSITION'
         ],
-        'guess' => 'apple'
+        'guess' => 'arbre'
     ]);
 });
 
@@ -47,7 +47,7 @@ test('guess word with no letter present returns letter not present', function ()
     ]);
 });
 
-test('guess word with length different of 5 retyrbs an error', function () {
+test('guess word with length different of 5 returns an error', function () {
     $response = $this->post('/api/guessword/1', ['guess' => 'apples']);
     $response->assertStatus(400);
     $response->assertJson([
