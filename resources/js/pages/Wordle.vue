@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 
 enum LetterStatus {
     CORRECT_POSITION = 'CORRECT_POSITION',
@@ -7,10 +7,25 @@ enum LetterStatus {
     NOT_PRESENT = 'NOT_PRESENT',
 }
 
-const maxAttempt = 6;
+const MAX_ATTEMPTS = 6;
+const WORDS_LENGTH = 5;
+
+const wordToGuessId = ref<number | null>(null);
 const actualAttempt = ref(0);
-const words = ref<string[][]>(new Array(maxAttempt).fill('').map(() => new Array(5).fill('')));
-const letterStates = ref(new Array(maxAttempt).fill('').map(() => new Array(5).fill(null)));
+const guessedWords = ref<string[][]>(new Array(MAX_ATTEMPTS).fill('').map(() => new Array(WORDS_LENGTH).fill('')));
+const letterStates = ref(new Array(MAX_ATTEMPTS).fill('').map(() => new Array(WORDS_LENGTH).fill(null)));
+
+async function getRandomWordId() {
+    const response = await fetch('http://127.0.0.1:8000/api/randomwordid');
+    const data = await response.json();
+    return data.id as number;
+}
+
+onMounted(async () => {
+    wordToGuessId.value = await getRandomWordId();
+});
+
+watch(wordToGuessId, () => console.log(wordToGuessId.value));
 
 function letterStateToCellClass(letterStatus: LetterStatus) {
     switch (letterStatus) {
@@ -23,19 +38,23 @@ function letterStateToCellClass(letterStatus: LetterStatus) {
     }
 }
 
-async function checkWord(word: string) {
-    const response = await fetch('http://127.0.0.1:8000/api/guessword/1', {
+async function checkWord(id: number | null, guess: string) {
+    if (id === null) return;
+    if (actualAttempt.value >= MAX_ATTEMPTS) return;
+    if (guessedWords.value[actualAttempt.value].join('').length !== 5) return;
+
+    const response = await fetch(`http://127.0.0.1:8000/api/guessword/${id}`, {
         headers: {
             Accept: 'application/json',
             'Content-Type': 'application/json',
         },
         method: 'POST',
-        body: JSON.stringify({ guess: word }),
+        body: JSON.stringify({ guess }),
     });
     const data = await response.json();
-    const presenceArray = data.guessResult;
-    letterStates.value[actualAttempt.value] = presenceArray;
-    actualAttempt.value = actualAttempt.value < maxAttempt - 1 ? actualAttempt.value + 1 : 0;
+
+    letterStates.value[actualAttempt.value] = data.guessResult;
+    actualAttempt.value++;
 }
 </script>
 
@@ -46,21 +65,18 @@ async function checkWord(word: string) {
     </header>
     <body class="body">
         <main class="main">
-            <div v-for="(word, wordIndex) in words" :key="wordIndex" class="wordLine">
+            <div v-for="(word, wordIndex) in guessedWords" :key="wordIndex" class="wordLine">
                 <input
-                    v-for="(letter, letterIndex) in word"
+                    v-for="(_, letterIndex) in word"
                     :key="letterIndex"
-                    v-model="words[wordIndex][letterIndex]"
+                    v-model="guessedWords[wordIndex][letterIndex]"
                     :disabled="wordIndex !== actualAttempt"
                     :class="`cell ${letterStateToCellClass(letterStates[wordIndex][letterIndex])}`"
                     maxlength="1"
                 />
             </div>
-            <button @click="() => checkWord(words[actualAttempt].join(''))" class="submitButton">Submit</button>
+            <button @click="() => checkWord(wordToGuessId, guessedWords[actualAttempt].join(''))" class="submitButton">Submit</button>
         </main>
-        <aside class="aside">
-            <h2 id="attemptDisplay">Attempt : {{ actualAttempt }}</h2>
-        </aside>
     </body>
 </template>
 
@@ -99,11 +115,6 @@ async function checkWord(word: string) {
     flex: 2;
 }
 
-.aside {
-    flex: 1;
-    align-content: center;
-}
-
 .wordLine {
     display: flex;
     gap: 15px;
@@ -116,6 +127,7 @@ async function checkWord(word: string) {
     height: 75px;
     text-align: center;
     font-size: 2rem;
+    font-weight: 700;
     text-transform: capitalize;
     background-color: black;
     border: 2px solid gray;
