@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\Word;
 
 enum LetterStatus: string
 {
@@ -13,6 +14,11 @@ enum LetterStatus: string
 
 class WordleController extends Controller
 {
+
+    public function getRandomWordId(Request $request) {
+        $word = Word::all()->random();
+        return response()->json(['id' => $word->id], 200);
+    }
 
     const WORD_TO_GUESS = 'apple';
     const WORD_LENGTH = 5;
