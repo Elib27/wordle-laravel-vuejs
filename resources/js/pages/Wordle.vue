@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import WordleGrid from '@/components/WordleGrid.vue';
 import { computed, onMounted, ref } from 'vue';
 
 enum LetterStatus {
@@ -14,7 +15,7 @@ const wordToGuessId = ref<number | null>(null);
 const currentAttempt = ref(0);
 const currentLetterIndex = ref(0);
 const guessedWords = ref<string[][]>(new Array(MAX_ATTEMPTS).fill('').map(() => new Array(WORDS_LENGTH).fill('')));
-const letterStates = ref(new Array(MAX_ATTEMPTS).fill('').map(() => new Array(WORDS_LENGTH).fill(null)));
+const letterStates = ref<LetterStatus[][]>(new Array(MAX_ATTEMPTS).fill('').map(() => new Array(WORDS_LENGTH).fill(null)));
 
 const hasWon = computed(() =>
     letterStates.value[currentAttempt.value - 1 >= 0 ? currentAttempt.value - 1 : 0].reduce(
@@ -32,17 +33,6 @@ async function getRandomWordId() {
 onMounted(async () => {
     wordToGuessId.value = await getRandomWordId();
 });
-
-function letterStateToCellClass(letterStatus: LetterStatus) {
-    switch (letterStatus) {
-        case LetterStatus.CORRECT_POSITION:
-            return 'cell_correct_position';
-        case LetterStatus.WRONG_POSITION:
-            return 'cell_wrong_position';
-        default:
-            return '';
-    }
-}
 
 async function checkWord(id: number | null, guess: string, attempt: number) {
     if (id === null) return;
@@ -89,17 +79,7 @@ onMounted(document.addEventListener('keydown', handleKeyboardInput));
     </header>
     <body class="body">
         <main class="main">
-            <div class="grid">
-                <div v-for="(word, wordIndex) in guessedWords" :key="wordIndex" class="wordLine">
-                    <div
-                        v-for="(letter, letterIndex) in word"
-                        :key="letterIndex"
-                        :class="`cell ${letterStateToCellClass(letterStates[wordIndex][letterIndex])} ${letterIndex === currentLetterIndex && wordIndex === currentAttempt ? 'active' : ''}`"
-                    >
-                        {{ letter }}
-                    </div>
-                </div>
-            </div>
+            <WordleGrid :guessedWords :letterStates :currentLetterIndex :currentAttempt />
             <div v-if="hasWon" class="win-message">Tu as trouvé, bravo !</div>
         </main>
     </body>
@@ -152,9 +132,9 @@ onMounted(document.addEventListener('keydown', handleKeyboardInput));
 
 .wordLine {
     display: flex;
-    gap: 15px;
+    gap: 10px;
     align-items: center;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
 }
 
 .cell {
