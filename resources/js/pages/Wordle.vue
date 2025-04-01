@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import WordleGrid from '@/components/WordleGrid.vue';
+import { computed, onMounted, ref } from 'vue';
 
 enum LetterStatus {
     CORRECT_POSITION = 'CORRECT_POSITION',
@@ -7,36 +8,68 @@ enum LetterStatus {
     NOT_PRESENT = 'NOT_PRESENT',
 }
 
-const maxAttempt = 6;
-const actualAttempt = ref(0);
-const words = ref<string[][]>(new Array(maxAttempt).fill('').map(() => new Array(5).fill('')));
-const letterStates = ref(new Array(maxAttempt).fill('').map(() => new Array(5).fill(null)));
+const MAX_ATTEMPTS = 6;
+const WORDS_LENGTH = 5;
 
-function letterStateToCellClass(letterStatus: LetterStatus) {
-    switch (letterStatus) {
-        case LetterStatus.CORRECT_POSITION:
-            return 'cell_correct_position';
-        case LetterStatus.WRONG_POSITION:
-            return 'cell_wrong_position';
-        default:
-            return '';
-    }
+const wordToGuessId = ref<number | null>(null);
+const currentAttempt = ref(0);
+const currentLetterIndex = ref(0);
+const guessedWords = ref<string[][]>(new Array(MAX_ATTEMPTS).fill('').map(() => new Array(WORDS_LENGTH).fill('')));
+const letterStates = ref<LetterStatus[][]>(new Array(MAX_ATTEMPTS).fill('').map(() => new Array(WORDS_LENGTH).fill(null)));
+
+const hasWon = computed(() =>
+    letterStates.value[currentAttempt.value - 1 >= 0 ? currentAttempt.value - 1 : 0].reduce(
+        (acc, val) => acc && val === LetterStatus.CORRECT_POSITION,
+        true,
+    ),
+);
+
+async function getRandomWordId() {
+    const response = await fetch('http://127.0.0.1:8000/api/randomwordid');
+    const data = await response.json();
+    return data.id as number;
 }
 
-async function checkWord(word: string) {
-    const response = await fetch('http://127.0.0.1:8000/api/guessword/1', {
+onMounted(async () => {
+    wordToGuessId.value = await getRandomWordId();
+});
+
+async function checkWord(id: number | null, guess: string, attempt: number) {
+    if (id === null) return;
+    if (currentAttempt.value >= MAX_ATTEMPTS) return;
+    if (guessedWords.value[currentAttempt.value].join('').length !== 5) return;
+
+    const response = await fetch(`http://127.0.0.1:8000/api/guessword/${id}`, {
         headers: {
             Accept: 'application/json',
             'Content-Type': 'application/json',
         },
         method: 'POST',
-        body: JSON.stringify({ guess: word }),
+        body: JSON.stringify({ guess }),
     });
     const data = await response.json();
-    const presenceArray = data.guessResult;
-    letterStates.value[actualAttempt.value] = presenceArray;
-    actualAttempt.value = actualAttempt.value < maxAttempt - 1 ? actualAttempt.value + 1 : 0;
+
+    letterStates.value[attempt] = data.guessResult;
 }
+
+async function handleKeyboardInput(e: KeyboardEvent) {
+    const LETTERS = 'abcdefghijklmnopqrstuvwxyz';
+    if (LETTERS.includes(e.key)) {
+        if (currentLetterIndex.value >= WORDS_LENGTH) return;
+        guessedWords.value[currentAttempt.value][currentLetterIndex.value] = e.key;
+        currentLetterIndex.value++;
+    } else if (e.key === 'Backspace') {
+        currentLetterIndex.value = Math.max(currentLetterIndex.value - 1, 0);
+        guessedWords.value[currentAttempt.value][currentLetterIndex.value] = '';
+    } else if (e.key === 'Enter') {
+        if (currentLetterIndex.value !== WORDS_LENGTH) return;
+        await checkWord(wordToGuessId.value, guessedWords.value[currentAttempt.value].join(''), currentAttempt.value);
+        currentAttempt.value++;
+        currentLetterIndex.value = 0;
+    }
+}
+
+onMounted(document.addEventListener('keydown', handleKeyboardInput));
 </script>
 
 <template>
@@ -46,21 +79,9 @@ async function checkWord(word: string) {
     </header>
     <body class="body">
         <main class="main">
-            <div v-for="(word, wordIndex) in words" :key="wordIndex" class="wordLine">
-                <input
-                    v-for="(letter, letterIndex) in word"
-                    :key="letterIndex"
-                    v-model="words[wordIndex][letterIndex]"
-                    :disabled="wordIndex !== actualAttempt"
-                    :class="`cell ${letterStateToCellClass(letterStates[wordIndex][letterIndex])}`"
-                    maxlength="1"
-                />
-            </div>
-            <button @click="() => checkWord(words[actualAttempt].join(''))" class="submitButton">Submit</button>
+            <WordleGrid :guessedWords :letterStates :currentLetterIndex :currentAttempt />
+            <div v-if="hasWon" class="win-message">Tu as trouvé, bravo !</div>
         </main>
-        <aside class="aside">
-            <h2 id="attemptDisplay">Attempt : {{ actualAttempt }}</h2>
-        </aside>
     </body>
 </template>
 
@@ -70,12 +91,17 @@ async function checkWord(word: string) {
     align-items: center;
     justify-content: center;
     position: relative;
-    background-color: gray;
+    height: 60px;
+    background-color: rgb(29, 29, 32);
     padding-top: 10px;
     padding-bottom: 10px;
 }
 #pageTitle {
-    font-size: 2rem;
+    font-size: 1.5rem;
+    color: white;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 4px;
 }
 #restartButton {
     position: absolute;
@@ -86,10 +112,10 @@ async function checkWord(word: string) {
     display: flex;
     width: 100%;
     justify-content: space-around;
-    background-color: black;
+    background-color: #0e0e0f;
     padding: 50px;
     color: white;
-    min-height: 100vh;
+    min-height: calc(100vh - 60px);
 }
 
 .main {
@@ -99,27 +125,34 @@ async function checkWord(word: string) {
     flex: 2;
 }
 
-.aside {
-    flex: 1;
-    align-content: center;
+.grid {
+    pointer-events: none;
+    user-select: none;
 }
 
 .wordLine {
     display: flex;
-    gap: 15px;
+    gap: 10px;
     align-items: center;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
 }
 
 .cell {
-    width: 75px;
-    height: 75px;
-    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 70px;
+    height: 70px;
     font-size: 2rem;
+    font-weight: 700;
     text-transform: capitalize;
-    background-color: black;
-    border: 2px solid gray;
-    border-radius: 10%;
+    border: 3px solid #2f2f2f;
+    border-radius: 8px;
+    transition: border 0.15s ease-out;
+}
+
+.cell.active {
+    border-color: #73adff;
 }
 
 .cell_correct_position {
@@ -133,5 +166,10 @@ async function checkWord(word: string) {
 .submitButton {
     border: 1px solid white;
     border-radius: 10%;
+}
+
+.win-message {
+    font-size: 1.2rem;
+    margin-top: 1rem;
 }
 </style>
